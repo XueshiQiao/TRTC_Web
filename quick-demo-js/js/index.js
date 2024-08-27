@@ -14,7 +14,11 @@ window.isIframe = window.self !== window.top;
 let sdkAppId;
 let sdkSecretKey;
 let roomId;
-let trtc = TRTC.create()
+let trtc = TRTC.create(
+	{
+		enableSEI: true
+	}
+)
 
 let userId;
 let shareUserId;
@@ -83,13 +87,22 @@ async function enterRoom() {
 	setButtonLoading('enter', true);
 	try {
 		const { userSig } = genTestUserSig({ sdkAppId, userId, sdkSecretKey });
-		await trtc.enterRoom({ roomId, sdkAppId, userId, userSig })
+		addSuccessLog(`[${userId}] enterRoom: ${roomId}`);
+		// use strRoomId here. use roomId for integer type room id.
+		await trtc.enterRoom({ strRoomId: roomId.toString(), sdkAppId, userId, userSig })
 		reportSuccessEvent('enterRoom', sdkAppId)
 		refreshLink()
 		invite.style.display = 'flex';
 		addSuccessLog(`[${userId}] enterRoom.`);
 		setButtonLoading('enter', false);
 		setButtonDisabled('enter', true);
+
+		trtc.on(TRTC.EVENT.SEI_MESSAGE, (event) => {
+			console.log('SEI_MESSAGE', event);
+			const decoder = new TextDecoder("utf-8");
+			const text = decoder.decode(event.data);
+			console.log(`receive ${event.userId} 的 sei message: ${text}`)
+		})
 	} catch (error) {
 		console.log('enterRoom error', error);
 		setButtonLoading('enter', false);
